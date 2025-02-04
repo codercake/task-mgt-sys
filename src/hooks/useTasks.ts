@@ -1,72 +1,66 @@
 import { useState, useEffect } from 'react';
-import { Task, NewTask } from '../types/Task';
-import { useToast } from '@/components/ui/use-toast';
 
-export function useTasks() {
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  completed: boolean;
+  dueDate?: string;
+}
+
+export const useTasks = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
+  
   useEffect(() => {
     const savedTasks = localStorage.getItem('tasks');
     if (savedTasks) {
+      console.log('Loading saved tasks:', JSON.parse(savedTasks));
       setTasks(JSON.parse(savedTasks));
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
+    console.log('Saving tasks to localStorage:', tasks);
     localStorage.setItem('tasks', JSON.stringify(tasks));
   }, [tasks]);
 
-  const addTask = (newTask: NewTask) => {
-    const task: Task = {
+  const addTask = (newTask: Omit<Task, 'id'>) => {
+    const task = {
       ...newTask,
       id: crypto.randomUUID(),
-      completed: false,
-      createdAt: new Date().toISOString(),
     };
-    setTasks(prev => [task, ...prev]);
-    toast({
-      title: "Task added",
-      description: "Your new task has been created successfully.",
-    });
+    console.log('Adding new task:', task);
+    setTasks(prevTasks => [...prevTasks, task]);
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === id ? { ...task, completed: !task.completed } : task
+  const updateTask = (taskId: string, updatedTask: Partial<Task>) => {
+    console.log('Updating task:', taskId, updatedTask);
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === taskId ? { ...task, ...updatedTask } : task
       )
     );
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
-    toast({
-      title: "Task deleted",
-      description: "The task has been removed.",
-    });
+  const deleteTask = (taskId: string) => {
+    console.log('Deleting task:', taskId);
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
   };
 
-  const updateTask = (id: string, updates: Partial<NewTask>) => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === id ? { ...task, ...updates } : task
+  const toggleTaskCompletion = (taskId: string) => {
+    console.log('Toggling task completion:', taskId);
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId ? { ...task, completed: !task.completed } : task
       )
     );
-    toast({
-      title: "Task updated",
-      description: "Your task has been updated successfully.",
-    });
   };
 
   return {
     tasks,
-    loading,
     addTask,
-    toggleTask,
-    deleteTask,
     updateTask,
+    deleteTask,
+    toggleTaskCompletion,
   };
-}
+};
